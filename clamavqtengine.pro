@@ -15,5 +15,5 @@ includes.path = /usr/local/include
 INSTALLS += target includes
 
 # Input
-HEADERS += clamavengine.h dirscanner.h filescanner.h
-SOURCES += clamavengine.cpp dirscanner.cpp filescanner.cpp
+HEADERS += clamavengine.h   dirscanner.h   filescanner.h   memscanner.h
+SOURCES += clamavengine.cpp dirscanner.cpp filescanner.cpp memscanner.cpp

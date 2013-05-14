@@ -36,11 +36,12 @@ private:
 	static int sigload_cb(const char *_type, const char *_name, void *_context);
 	bool scanFileThread(const QString &_file, bool _is_proc);
 	bool scanDirThread(const QString &_dir, const QStringList &_excl_dirs);
+	bool scanMemoryThread();
 
 private Q_SLOTS:
 	void fileScannedSlot(const QString &_fd, qint32 _result, const QString &_virname, bool _is_proc);
 	void fileFindedSlot(const QString &_file);
-	void dirEndScanSlot();
+	void endScanSlot();
 
 Q_SIGNALS:
 	void fileStartScanSignal(const QString &_file);
