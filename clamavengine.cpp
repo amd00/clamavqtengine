@@ -3,6 +3,7 @@
 #include <QDir>
 #include <QFileInfo>
 #include <QDebug>
+#include <QTemporaryFile>
 
 #include "clamavengine.h"
 #include "filescanner.h"
@@ -13,7 +14,8 @@ int ClamavEngine::sigload_cb(const char *_type, const char *_name, void *_contex
 		return ((ClamavEngine*)_context) -> loadSignature(_type, _name);
 }
 
-ClamavEngine::ClamavEngine(qint32 _thread_count, const QString &_db_path) :QThreadPool(), m_db_path(_db_path), m_engine(NULL), m_queue_size(0), m_dir_scanning(false)
+ClamavEngine::ClamavEngine(qint32 _thread_count, const QString &_db_path) :QThreadPool(), m_db_path(_db_path), m_engine(NULL), m_queue_size(0), 
+		m_processes(), m_dir_scanning(false)
 {
 	if(m_db_path.isNull())
 		m_db_path = cl_retdbdir();
@@ -115,14 +117,47 @@ bool ClamavEngine::scanDir(const QString &_dir, const QStringList &_excl_dirs)
 
 bool ClamavEngine::scanMemory()
 {
+	m_dir_scanning = true;
 	QDir proc_dir("/proc");
 	QStringList proc_list = proc_dir.entryList(QDir::Dirs | QDir::NoDotAndDotDot).filter(QRegExp("\\d+"));
+	QRegExp mem_addr_regex("^([0-9a-fA-F]+)-([0-9a-fA-F]+)\\sr");
 	foreach(QString proc, proc_list)
 	{
-		QString mem_file(QDir(proc_dir.absoluteFilePath(proc)).absoluteFilePath("mem"));
-		QString bin_file(QFile::symLinkTarget(QDir(proc_dir.absoluteFilePath(proc)).absoluteFilePath("exe")));
-		scanFileThread(mem_file, true);
+		QString maps_file_str(QDir(proc_dir.absoluteFilePath(proc)).absoluteFilePath("maps"));
+		QString mem_file_str(QDir(proc_dir.absoluteFilePath(proc)).absoluteFilePath("mem"));
+		QFile maps_file(maps_file_str);
+		QFile mem_file(mem_file_str);
+		if(!maps_file.open(QIODevice::ReadOnly))
+		{
+			qCritical("ERROR: Open file error: %s", maps_file.errorString().toLocal8Bit().data());
+			continue;
+		}
+		if(!mem_file.open(QIODevice::ReadOnly))
+		{
+			qCritical("ERROR: Open file error: %s", mem_file.errorString().toLocal8Bit().data());
+			continue;
+		}
+		QTextStream f_str(&maps_file);
+		QTemporaryFile f(QDir::temp().absoluteFilePath("proc_" + proc + "_XXXXXXX"));
+		f.setAutoRemove(false);
+		f.open();
+		for(QString line = f_str.readLine(); !line.isNull(); line = f_str.readLine())
+		{
+			qint32 pos = mem_addr_regex.indexIn(line);
+			if(!pos)
+			{
+				quint32 start = mem_addr_regex.capturedTexts()[1].toUInt(NULL, 16);
+				quint32 end = mem_addr_regex.capturedTexts()[2].toUInt(NULL, 16);
+				mem_file.seek(start);
+				QByteArray mem = mem_file.read(end - start);
+				f.write(mem);
+			}
+		}
+		f.close();
+		
+		scanFileThread(f.fileName(), true);
 	}
+	m_dir_scanning = false;
 	return true;
 }
 
@@ -141,10 +176,9 @@ void ClamavEngine::fileScannedSlot(const QString &_file, qint32 _result, const Q
 		case CL_VIRUS:
 			if(_is_proc)
 			{
-				QString proc_name = QFileInfo(QFile::symLinkTarget(QFileInfo(_file).absoluteDir().absoluteFilePath("exe"))).baseName();
-				QRegExp proc_reg("\\d+");
-				proc_reg.indexIn(_file);
-				qint32 pid = proc_reg.cap(0).toInt();
+				QFile::remove(_file);
+				qint32 pid = _file.split("_")[1].toInt();
+				QString proc_name = QFileInfo(QFile::symLinkTarget(QDir("/proc/" + QString::number(pid)).absoluteFilePath("exe"))).baseName();
 				Q_EMIT procVirusDetectedSignal(proc_name, pid, QString(_virname));
 				qDebug("INFO: End process scanning: %s: INFECTED - %s", proc_name.toLocal8Bit().data(), _virname.toLocal8Bit().data());
 			}
@@ -157,10 +191,9 @@ void ClamavEngine::fileScannedSlot(const QString &_file, qint32 _result, const Q
 		case CL_CLEAN:
 			if(_is_proc)
 			{
-				QString proc_name = QFileInfo(QFile::symLinkTarget(QFileInfo(_file).absoluteDir().absoluteFilePath("exe"))).baseName();
-				QRegExp proc_reg("\\d+");
-				proc_reg.indexIn(_file);
-				qint32 pid = proc_reg.cap(0).toInt();
+				QFile::remove(_file);
+				qint32 pid = _file.split("_")[1].toInt();
+				QString proc_name = QFileInfo(QFile::symLinkTarget(QDir("/proc/" + QString::number(pid)).absoluteFilePath("exe"))).baseName();
 				Q_EMIT procEndScanSignal(proc_name, pid);
 				qDebug("INFO: End process scanning: %i - %s: CLEAN", pid, proc_name.toLocal8Bit().data());
 			}

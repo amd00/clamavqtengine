@@ -6,7 +6,6 @@
 
 #include <QObject>
 #include <QThreadPool>
-#include <QHash>
 #include <QStringList>
 
 class ClamavEngine : public QThreadPool
@@ -17,6 +16,7 @@ private:
 	QString m_db_path;
 	cl_engine *m_engine;
 	quint32 m_queue_size;
+	QStringList m_processes;
 	bool m_dir_scanning;
 
 public:

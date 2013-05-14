@@ -28,7 +28,8 @@ void FileScanner::run()
 	}
 	if(m_is_proc)
 	{
-		QString proc_name = QFileInfo(QFile::symLinkTarget(QFileInfo(m_file).absoluteDir().absoluteFilePath("exe"))).baseName();
+		qint32 pid = m_file.split("_")[1].toInt();
+			QString proc_name = QFileInfo(QFile::symLinkTarget(QDir("/proc/" + QString::number(pid)).absoluteFilePath("exe"))).baseName();
 		qDebug("INFO: Scanning process: %s", proc_name.toLocal8Bit().data());
 	}
 	else
