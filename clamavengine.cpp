@@ -2,7 +2,6 @@
 #include <QFile>
 #include <QDir>
 #include <QFileInfo>
-#include <QDebug>
 #include <QTemporaryFile>
 
 #include "clamavengine.h"
@@ -48,38 +47,21 @@ bool ClamavEngine::init()
 
 qint32 ClamavEngine::dbAge() const
 {
-	cl_stat stat;
-	memset(&stat, 0, sizeof(stat));
-	qint32 stat_res = cl_statinidir(m_db_path.toLocal8Bit().data(), &stat);
-	if(stat_res)
-	{
-		qCritical("ERROR: %s",  cl_strerror(stat_res));
-		cl_statfree(&stat);
-		return -1;
-	}
-	stat_res = cl_statchkdir(&stat);
-	if(stat_res)
-	{
-		qCritical("ERROR: %s",  cl_strerror(stat_res));
-		cl_statfree(&stat);
-		return -1;
-	}
-	if(!stat.entries)
-	{
-		qCritical("No virus database found. You must update virus database.");
-		cl_statfree(&stat);
-		return -1;
-	}
+	QDir db_dir(m_db_path);
+	QStringList files = db_dir.entryList(QStringList() << "*.cvd" << "*.cld", QDir::Files | QDir::Hidden | QDir::NoSymLinks);
 	QDateTime res, tmp;
-	for(qint32 i = 0; i < stat.entries; i++)
+	foreach(QString file, files)
 	{
-		tmp.setTime_t(stat.stattab[i].st_mtime);
+		cl_cvd *cvd = cl_cvdhead(db_dir.absoluteFilePath(file).toLocal8Bit().data());
+		if(!cvd)
+			continue;
+		tmp.setTime_t(cvd -> stime);
+		cl_cvdfree(cvd);
 		if(res.isNull())
 			res = tmp;
 		if(tmp > res)
 			res = tmp;
 	}
-	cl_statfree(&stat);
 	return res.date().daysTo(QDate::currentDate());
 }
 
