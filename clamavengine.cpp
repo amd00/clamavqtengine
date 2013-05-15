@@ -46,6 +46,43 @@ bool ClamavEngine::init()
 	return true;
 }
 
+qint32 ClamavEngine::dbAge() const
+{
+	cl_stat stat;
+	memset(&stat, 0, sizeof(stat));
+	qint32 stat_res = cl_statinidir(m_db_path.toLocal8Bit().data(), &stat);
+	if(stat_res)
+	{
+		qCritical("ERROR: %s",  cl_strerror(stat_res));
+		cl_statfree(&stat);
+		return -1;
+	}
+	stat_res = cl_statchkdir(&stat);
+	if(stat_res)
+	{
+		qCritical("ERROR: %s",  cl_strerror(stat_res));
+		cl_statfree(&stat);
+		return -1;
+	}
+	if(!stat.entries)
+	{
+		qCritical("No virus database found. You must update virus database.");
+		cl_statfree(&stat);
+		return -1;
+	}
+	QDateTime res, tmp;
+	for(qint32 i = 0; i < stat.entries; i++)
+	{
+		tmp.setTime_t(stat.stattab[i].st_mtime);
+		if(res.isNull())
+			res = tmp;
+		if(tmp > res)
+			res = tmp;
+	}
+	cl_statfree(&stat);
+	return res.date().daysTo(QDate::currentDate());
+}
+
 qint32 ClamavEngine::loadDb()
 {
 	cl_engine_set_clcb_sigload(m_engine, ClamavEngine::sigload_cb, (void*)this);

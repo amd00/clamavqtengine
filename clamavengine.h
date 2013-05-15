@@ -7,6 +7,7 @@
 #include <QObject>
 #include <QThreadPool>
 #include <QStringList>
+#include <QDateTime>
 
 class ClamavEngine : public QThreadPool
 {
@@ -23,6 +24,7 @@ public:
 	ClamavEngine(qint32 _thread_count = -1, const QString &_db_path = QString::null);
 	virtual ~ClamavEngine();
 	bool init();
+	qint32 dbAge() const;
 	qint32 loadDb();
 	bool compile();
 	bool scanFile(const QString &_file);
