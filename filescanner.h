@@ -24,7 +24,7 @@ protected:
 	void run();
 	
 Q_SIGNALS:
-	void fileScannedSignal(const QString &_fd, qint32 _result, const QString &_virname, bool _is_proc);
+	void fileScanCompletedSignal(const QString &_fd, qint32 _result, const QString &_virname, bool _is_proc);
 	void errorSignal(const QString &_file, const QString &_err);
 };
 

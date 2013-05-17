@@ -26,7 +26,7 @@ private:
 
 Q_SIGNALS:
 	void fileFindedSignal(const QString &_file);
-	void dirEndScanSignal();
+	void dirScanCompletedSignal();
 };
 
 #endif

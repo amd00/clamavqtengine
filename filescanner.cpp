@@ -38,5 +38,5 @@ void FileScanner::run()
 	long unsigned int scanned = 0;
 	int result = cl_scandesc(f.handle(), &virname, &scanned, m_engine, CL_SCAN_STDOPT);
 	f.close();
-	Q_EMIT fileScannedSignal(m_file, result, virname, m_is_proc);
+	Q_EMIT fileScanCompletedSignal(m_file, result, virname, m_is_proc);
 }

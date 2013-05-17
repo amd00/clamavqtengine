@@ -20,5 +20,5 @@ void DirScanner::scanDir(const QString &_dir, bool _is_root)
 	foreach(QString f, files)
 		Q_EMIT fileFindedSignal(dir.absoluteFilePath(f));
 	if(_is_root)
-		Q_EMIT dirEndScanSignal();
+		Q_EMIT dirScanCompletedSignal();
 }

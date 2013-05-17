@@ -21,7 +21,7 @@ private:
 
 Q_SIGNALS:
 	void procFindedSignal(const QString &_file);
-	void memEndScanSignal();
+	void memScanCompletedSignal();
 };
 
 #endif

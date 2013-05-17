@@ -103,12 +103,12 @@ bool ClamavEngine::scanFileThread(const QString &_file, bool _is_proc)
 		QRegExp proc_reg("\\d+");
 		proc_reg.indexIn(_file);
 		qint32 pid = proc_reg.cap(0).toInt();
-		Q_EMIT procStartScanSignal(proc_name, pid);
+		Q_EMIT procScanStartedSignal(proc_name, pid);
 	}
 	else
-		Q_EMIT fileStartScanSignal(QFileInfo(_file).absoluteFilePath());
+		Q_EMIT fileScanStartedSignal(QFileInfo(_file).absoluteFilePath());
 	FileScanner *scanner = new FileScanner(m_engine, _file, _is_proc, this);
-	connect(scanner, SIGNAL(fileScannedSignal(const QString&, qint32, const QString&, bool)), this, SLOT(fileScannedSlot(const QString&, qint32, const QString&, bool)));
+	connect(scanner, SIGNAL(fileScanCompletedSignal(const QString&, qint32, const QString&, bool)), this, SLOT(fileScanCompletedSlot(const QString&, qint32, const QString&, bool)));
 	connect(scanner, SIGNAL(errorSignal(const QString&, const QString&)), this, SIGNAL(errorSignal(const QString&, const QString&)));
 	m_queue_size++;
 	start(scanner);
@@ -119,7 +119,7 @@ bool ClamavEngine::scanDirThread(const QString &_dir, const QStringList &_excl_d
 {
 	DirScanner *scanner = new DirScanner(_dir, _excl_dirs);
 	connect(scanner, SIGNAL(fileFindedSignal(const QString&)), this, SLOT(fileFindedSlot(const QString&)));
-	connect(scanner, SIGNAL(dirEndScanSignal()), this, SLOT(dirEndScanSlot()));
+	connect(scanner, SIGNAL(dirScanCompletedSignal()), this, SLOT(dirScanCompletedSlotl()));
 	start(scanner);
 	return true;
 }
@@ -127,8 +127,8 @@ bool ClamavEngine::scanDirThread(const QString &_dir, const QStringList &_excl_d
 bool ClamavEngine::scanMemoryThread()
 {
 	MemScanner *scanner = new MemScanner();
-	connect(scanner, SIGNAL(procFindedSignal(const QString&)), this, SLOT(fileFindedSlot(const QString&)));
-	connect(scanner, SIGNAL(memEndScanSignal()), this, SLOT(endScanSlot()));
+	connect(scanner, SIGNAL(procFindedSignal(const QString&)), this, SLOT(procFindedSlot(const QString&)));
+	connect(scanner, SIGNAL(memScanCompletedSignal()), this, SLOT(memScanCompletedSlot()));
 	start(scanner);
 	return true;
 }
@@ -157,7 +157,7 @@ qint32 ClamavEngine::loadSignature(const QString &_type, const QString &_name) c
 	return 0;
 }
 
-void ClamavEngine::fileScannedSlot(const QString &_file, qint32 _result, const QString &_virname, bool _is_proc)
+void ClamavEngine::fileScanCompletedSlot(const QString &_file, qint32 _result, const QString &_virname, bool _is_proc)
 {
 	m_queue_size--;
 	switch(_result)
@@ -183,12 +183,12 @@ void ClamavEngine::fileScannedSlot(const QString &_file, qint32 _result, const Q
 				QFile::remove(_file);
 				qint32 pid = _file.split("_")[1].toInt();
 				QString proc_name = QFileInfo(QFile::symLinkTarget(QDir("/proc/" + QString::number(pid)).absoluteFilePath("exe"))).baseName();
-				Q_EMIT procEndScanSignal(proc_name, pid);
+				Q_EMIT procScanCompletedSignal(proc_name, pid);
 				qDebug("INFO: End process scanning: %i - %s: CLEAN", pid, proc_name.toLocal8Bit().data());
 			}
 			else
 			{
-				Q_EMIT fileEndScanSignal(QFileInfo(_file).absoluteFilePath());
+				Q_EMIT fileScanCompletedSignal(QFileInfo(_file).absoluteFilePath());
 				qDebug("INFO: End file scanning: %s: CLEAN", _file.toLocal8Bit().data());
 			}
 			break;
@@ -197,7 +197,9 @@ void ClamavEngine::fileScannedSlot(const QString &_file, qint32 _result, const Q
 			Q_EMIT errorSignal(_file, cl_strerror(_result));
 	}
 	if(!m_queue_size && !m_dir_scanning)
-		Q_EMIT endScanSignal();
+	{
+		Q_EMIT (_is_proc ? memScanCompletedSignal() : dirScanCompletedSignal());
+	}
 }
 
 void ClamavEngine::fileFindedSlot(const QString &_file)
@@ -205,9 +207,21 @@ void ClamavEngine::fileFindedSlot(const QString &_file)
 	scanFileThread(_file, false);
 }
 
-void ClamavEngine::endScanSlot()
+void ClamavEngine::procFindedSlot(const QString &_file)
+{
+	scanFileThread(_file, true);
+}
+
+void ClamavEngine::memScanCompletedSlot()
 {
 	m_dir_scanning = false;
 	if(!m_queue_size)
-		Q_EMIT endScanSignal();
+		Q_EMIT memScanCompletedSignal();
+}
+
+void ClamavEngine::dirScanCompletedSlot()
+{
+	m_dir_scanning = false;
+	if(!m_queue_size)
+		Q_EMIT dirScanCompletedSignal();
 }

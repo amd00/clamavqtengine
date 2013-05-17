@@ -41,19 +41,22 @@ private:
 	bool scanMemoryThread();
 
 private Q_SLOTS:
-	void fileScannedSlot(const QString &_fd, qint32 _result, const QString &_virname, bool _is_proc);
+	void fileScanCompletedSlot(const QString &_fd, qint32 _result, const QString &_virname, bool _is_proc);
+	void memScanCompletedSlot();
+	void dirScanCompletedSlot();
 	void fileFindedSlot(const QString &_file);
-	void endScanSlot();
+	void procFindedSlot(const QString &_file);
 
 Q_SIGNALS:
-	void fileStartScanSignal(const QString &_file);
-	void procStartScanSignal(const QString &_proc, qint32 _pid);
-	void fileEndScanSignal(const QString &_file);
-	void procEndScanSignal(const QString &_proc, qint32 _pid);
+	void fileScanStartedSignal(const QString &_file);
+	void procScanStartedSignal(const QString &_proc, qint32 _pid);
+	void fileScanCompletedSignal(const QString &_file);
+	void procScanCompletedSignal(const QString &_proc, qint32 _pid);
 	void fileVirusDetectedSignal(const QString &_file, const QString &_virus);
 	void procVirusDetectedSignal(const QString &_proc, qint32 _pid, const QString &_virus);
 	void errorSignal(const QString &_file, const QString &_err);
-	void endScanSignal();
+	void memScanCompletedSignal();
+	void dirScanCompletedSignal();
 };
 
 #endif
