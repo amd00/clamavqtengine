@@ -119,7 +119,7 @@ bool ClamavEngine::scanDirThread(const QString &_dir, const QStringList &_excl_d
 {
 	DirScanner *scanner = new DirScanner(_dir, _excl_dirs);
 	connect(scanner, SIGNAL(fileFindedSignal(const QString&)), this, SLOT(fileFindedSlot(const QString&)));
-	connect(scanner, SIGNAL(dirScanCompletedSignal()), this, SLOT(dirScanCompletedSlotl()));
+	connect(scanner, SIGNAL(dirScanCompletedSignal()), this, SLOT(dirScanCompletedSlot()));
 	start(scanner);
 	return true;
 }
