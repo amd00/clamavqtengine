@@ -7,6 +7,7 @@
 
 void MemScanner::run()
 {
+	Scanner::run();
 	scanMemory();
 }
 
@@ -50,5 +51,4 @@ void MemScanner::scanMemory()
 		f.close();
 		Q_EMIT procFindedSignal(f.fileName());
 	}
-	Q_EMIT memScanCompletedSignal();
 }

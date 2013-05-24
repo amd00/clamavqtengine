@@ -9,7 +9,9 @@
 #include <QStringList>
 #include <QDateTime>
 
-class ClamavEngine : public QThreadPool
+class FileScanner;
+
+class ClamavEngine : public QObject
 {
 	Q_OBJECT
 
@@ -18,7 +20,10 @@ private:
 	cl_engine *m_engine;
 	quint32 m_queue_size;
 	QStringList m_processes;
-	bool m_dir_scanning;
+	QThreadPool *m_pool;
+	QList<QThread*> m_file_threads;
+	QThread *m_dir_thread;
+	QThread *m_mem_thread;
 
 public:
 	ClamavEngine(qint32 _thread_count = -1, const QString &_db_path = QString::null);
@@ -30,6 +35,7 @@ public:
 	bool scanFile(const QString &_file);
 	bool scanDir(const QString &_dir, const QStringList &_excl_dirs = QStringList());
 	bool scanMemory();
+	void stop();
 
 protected:
 	virtual qint32 loadSignature(const QString &_type, const QString &_name) const;
@@ -42,10 +48,12 @@ private:
 
 private Q_SLOTS:
 	void fileScanCompletedSlot(const QString &_fd, qint32 _result, const QString &_virname, bool _is_proc);
-	void memScanCompletedSlot();
-	void dirScanCompletedSlot();
 	void fileFindedSlot(const QString &_file);
 	void procFindedSlot(const QString &_file);
+	void fileThreadStartedSlot(QThread *_thread);
+	void dirThreadStartedSlot(QThread *_thread);
+	void memThreadStartedSlot(QThread *_thread);
+	void threadFinishedSlot();
 
 Q_SIGNALS:
 	void fileScanStartedSignal(const QString &_file);
@@ -57,6 +65,7 @@ Q_SIGNALS:
 	void errorSignal(const QString &_file, const QString &_err);
 	void memScanCompletedSignal();
 	void dirScanCompletedSignal();
+	void scanStoppedSignal();
 };
 
 #endif

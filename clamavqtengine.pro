@@ -3,7 +3,7 @@ MOC_DIR = .moc
 
 QT -= gui
 TEMPLATE = lib
-VERSION = 1.2.0
+VERSION = 1.2.1
 TARGET = clamavqtengine
 INCLUDEPATH += .
 LIBS += -lclamav
@@ -15,5 +15,5 @@ includes.path = /usr/local/include
 INSTALLS += target includes
 
 # Input
-HEADERS += clamavengine.h   dirscanner.h   filescanner.h   memscanner.h
+HEADERS += clamavengine.h   dirscanner.h   filescanner.h   memscanner.h   scanner.h
 SOURCES += clamavengine.cpp dirscanner.cpp filescanner.cpp memscanner.cpp

@@ -2,15 +2,14 @@
 #ifndef _MEMSCANNER_H_
 #define _MEMSCANNER_H_
 
-#include <QObject>
-#include <QRunnable>
+#include "scanner.h"
 
-class MemScanner : public QObject, public QRunnable
+class MemScanner : public Scanner
 {
 	Q_OBJECT
 
 public:
-	MemScanner()  : QObject(), QRunnable() {}
+	MemScanner()  : Scanner() {}
 	~MemScanner() {}
 
 protected:
@@ -21,7 +20,6 @@ private:
 
 Q_SIGNALS:
 	void procFindedSignal(const QString &_file);
-	void memScanCompletedSignal();
 };
 
 #endif

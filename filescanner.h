@@ -2,12 +2,11 @@
 #ifndef _FILESCANNER_H_
 #define _FILESCANNER_H_
 
-#include <QRunnable>
-#include <QObject>
+#include "scanner.h"
 
 struct cl_engine;
 
-class FileScanner : public QObject, public QRunnable
+class FileScanner : public Scanner
 {
 	Q_OBJECT
 
@@ -17,8 +16,8 @@ private:
 	cl_engine *m_engine;
 	
 public:
-	FileScanner(cl_engine *_engine,const QString &_file, bool _is_proc, QObject *_par);
-	~FileScanner();
+	FileScanner(cl_engine *_engine,const QString &_file, bool _is_proc) : Scanner(), m_file(_file), m_is_proc(_is_proc), m_engine(_engine) {}
+	~FileScanner() {}
 	
 protected:
 	void run();

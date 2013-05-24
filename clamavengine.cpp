@@ -14,15 +14,15 @@ int ClamavEngine::sigload_cb(const char *_type, const char *_name, void *_contex
 		return ((ClamavEngine*)_context) -> loadSignature(_type, _name);
 }
 
-ClamavEngine::ClamavEngine(qint32 _thread_count, const QString &_db_path) :QThreadPool(), m_db_path(_db_path), m_engine(NULL), m_queue_size(0), 
-		m_processes(), m_dir_scanning(false)
+ClamavEngine::ClamavEngine(qint32 _thread_count, const QString &_db_path) :QObject(), m_db_path(_db_path), m_engine(NULL), m_queue_size(0), 
+		m_processes(), m_pool(new QThreadPool()), m_file_threads(), m_dir_thread(NULL), m_mem_thread(NULL)
 {
 	if(m_db_path.isNull())
 		m_db_path = cl_retdbdir();
 	qint32 thread_count = _thread_count <= 0 ? QThread::idealThreadCount() : _thread_count;
 	thread_count = (thread_count == -1 ? 1 : thread_count);
 	qDebug("INFO: Thread count: %i", thread_count);
-	setMaxThreadCount(thread_count);
+	m_pool -> setMaxThreadCount(thread_count);
 }
 
 ClamavEngine::~ClamavEngine()
@@ -30,6 +30,7 @@ ClamavEngine::~ClamavEngine()
 	if(m_engine)
 		cl_engine_free(m_engine);
 	m_engine = NULL;
+	delete m_pool;
 }
 
 bool ClamavEngine::init()
@@ -107,11 +108,12 @@ bool ClamavEngine::scanFileThread(const QString &_file, bool _is_proc)
 	}
 	else
 		Q_EMIT fileScanStartedSignal(QFileInfo(_file).absoluteFilePath());
-	FileScanner *scanner = new FileScanner(m_engine, _file, _is_proc, this);
+	FileScanner *scanner = new FileScanner(m_engine, _file, _is_proc);
 	connect(scanner, SIGNAL(fileScanCompletedSignal(const QString&, qint32, const QString&, bool)), this, SLOT(fileScanCompletedSlot(const QString&, qint32, const QString&, bool)));
 	connect(scanner, SIGNAL(errorSignal(const QString&, const QString&)), this, SIGNAL(errorSignal(const QString&, const QString&)));
+	connect(scanner, SIGNAL(threadStartedSignal(QThread*)), this, SLOT(fileThreadStartedSlot(QThread*)));
 	m_queue_size++;
-	start(scanner);
+	m_pool -> start(scanner);
 	return true;
 }
 
@@ -119,8 +121,8 @@ bool ClamavEngine::scanDirThread(const QString &_dir, const QStringList &_excl_d
 {
 	DirScanner *scanner = new DirScanner(_dir, _excl_dirs);
 	connect(scanner, SIGNAL(fileFindedSignal(const QString&)), this, SLOT(fileFindedSlot(const QString&)));
-	connect(scanner, SIGNAL(dirScanCompletedSignal()), this, SLOT(dirScanCompletedSlot()));
-	start(scanner);
+	connect(scanner, SIGNAL(threadStartedSignal(QThread*)), this, SLOT(dirThreadStartedSlot(QThread*)));
+	m_pool -> start(scanner);
 	return true;
 }
 
@@ -128,8 +130,8 @@ bool ClamavEngine::scanMemoryThread()
 {
 	MemScanner *scanner = new MemScanner();
 	connect(scanner, SIGNAL(procFindedSignal(const QString&)), this, SLOT(procFindedSlot(const QString&)));
-	connect(scanner, SIGNAL(memScanCompletedSignal()), this, SLOT(memScanCompletedSlot()));
-	start(scanner);
+	connect(scanner, SIGNAL(threadStartedSignal(QThread*)), this, SLOT(memThreadStartedSlot(QThread*)));
+	m_pool -> start(scanner);
 	return true;
 }
 
@@ -140,14 +142,27 @@ bool ClamavEngine::scanFile(const QString &_file)
 
 bool ClamavEngine::scanDir(const QString &_dir, const QStringList &_excl_dirs)
 {
-	m_dir_scanning = true;
 	return scanDirThread(_dir, _excl_dirs);
 }
 
 bool ClamavEngine::scanMemory()
 {
-	m_dir_scanning = true;
 	return scanMemoryThread();
+}
+
+void ClamavEngine::stop()
+{
+	qint32 thread_count = m_pool -> maxThreadCount();
+	if(m_dir_thread)
+		m_dir_thread -> terminate();
+	if(m_mem_thread)
+		m_mem_thread -> terminate();
+	foreach(QThread *thread, m_file_threads)
+		thread -> terminate();
+	delete m_pool;
+	m_pool = new QThreadPool();
+	m_pool -> setMaxThreadCount(thread_count);
+	Q_EMIT scanStoppedSignal();
 }
 
 qint32 ClamavEngine::loadSignature(const QString &_type, const QString &_name) const
@@ -196,10 +211,8 @@ void ClamavEngine::fileScanCompletedSlot(const QString &_file, qint32 _result, c
 			qDebug("INFO: Error - %s", cl_strerror(_result));
 			Q_EMIT errorSignal(_file, cl_strerror(_result));
 	}
-	if(!m_queue_size && !m_dir_scanning)
-	{
+	if(!m_queue_size && !m_dir_thread && !m_mem_thread)
 		Q_EMIT (_is_proc ? memScanCompletedSignal() : dirScanCompletedSignal());
-	}
 }
 
 void ClamavEngine::fileFindedSlot(const QString &_file)
@@ -212,16 +225,40 @@ void ClamavEngine::procFindedSlot(const QString &_file)
 	scanFileThread(_file, true);
 }
 
-void ClamavEngine::memScanCompletedSlot()
+void ClamavEngine::fileThreadStartedSlot(QThread *_thread)
 {
-	m_dir_scanning = false;
-	if(!m_queue_size)
-		Q_EMIT memScanCompletedSignal();
+	connect(_thread, SIGNAL(finished()), this, SLOT(threadFinishedSlot()));
+	m_file_threads.append(_thread);
 }
 
-void ClamavEngine::dirScanCompletedSlot()
+void ClamavEngine::dirThreadStartedSlot(QThread *_thread)
 {
-	m_dir_scanning = false;
-	if(!m_queue_size)
+	connect(_thread, SIGNAL(finished()), this, SLOT(threadFinishedSlot()));
+	m_dir_thread = _thread;
+}
+
+void ClamavEngine::memThreadStartedSlot(QThread *_thread)
+{
+	connect(_thread, SIGNAL(finished()), this, SLOT(threadFinishedSlot()));
+	m_mem_thread = _thread;
+}
+
+void ClamavEngine::threadFinishedSlot()
+{
+	QThread *_thread = (QThread*)sender();
+	if(_thread == m_dir_thread)
+	{
+		m_dir_thread = NULL;
+		if(!m_queue_size)
 		Q_EMIT dirScanCompletedSignal();
+	}
+	else if(_thread == m_mem_thread)
+	{
+		m_mem_thread = NULL;
+		if(!m_queue_size)
+			Q_EMIT memScanCompletedSignal();
+	}
+	else
+		m_file_threads.removeAll(_thread);
+	_thread -> deleteLater();
 }

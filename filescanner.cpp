@@ -9,16 +9,9 @@
 
 #include "filescanner.h"
 
-FileScanner::FileScanner(cl_engine *_engine, const QString &_file, bool _is_proc, QObject *_par) : QObject(_par), QRunnable(), m_file(_file), m_is_proc(_is_proc), m_engine(_engine)
-{
-}
-
-FileScanner::~FileScanner()
-{
-}
-
 void FileScanner::run()
 {
+	Scanner::run();
 	QFile f(m_file);
 	if(!f.open(QIODevice::ReadOnly))
 	{
