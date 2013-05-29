@@ -39,7 +39,6 @@ class ClamavEngine : public QObject
 private:
 	QString m_db_path;
 	cl_engine *m_engine;
-	quint32 m_queue_size;
 	QStringList m_processes;
 	QThreadPool *m_pool;
 	QList<QThread*> m_file_threads;

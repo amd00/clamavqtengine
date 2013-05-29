@@ -35,7 +35,7 @@ int ClamavEngine::sigload_cb(const char *_type, const char *_name, void *_contex
 		return ((ClamavEngine*)_context) -> loadSignature(_type, _name);
 }
 
-ClamavEngine::ClamavEngine(qint32 _thread_count, const QString &_db_path) :QObject(), m_db_path(_db_path), m_engine(NULL), m_queue_size(0), 
+ClamavEngine::ClamavEngine(qint32 _thread_count, const QString &_db_path) :QObject(), m_db_path(_db_path), m_engine(NULL),
 		m_processes(), m_pool(new QThreadPool()), m_file_threads(), m_dir_thread(NULL), m_mem_thread(NULL)
 {
 	if(m_db_path.isNull())
@@ -133,7 +133,6 @@ bool ClamavEngine::scanFileThread(const QString &_file, bool _is_proc)
 	connect(scanner, SIGNAL(fileScanCompletedSignal(const QString&, qint32, const QString&, bool)), this, SLOT(fileScanCompletedSlot(const QString&, qint32, const QString&, bool)));
 	connect(scanner, SIGNAL(errorSignal(const QString&, const QString&)), this, SIGNAL(errorSignal(const QString&, const QString&)));
 	connect(scanner, SIGNAL(threadStartedSignal(QThread*)), this, SLOT(fileThreadStartedSlot(QThread*)));
-	m_queue_size++;
 	m_pool -> start(scanner);
 	return true;
 }
@@ -195,7 +194,6 @@ qint32 ClamavEngine::loadSignature(const QString &_type, const QString &_name) c
 
 void ClamavEngine::fileScanCompletedSlot(const QString &_file, qint32 _result, const QString &_virname, bool _is_proc)
 {
-	m_queue_size--;
 	switch(_result)
 	{
 		case CL_VIRUS:
@@ -232,7 +230,7 @@ void ClamavEngine::fileScanCompletedSlot(const QString &_file, qint32 _result, c
 			qDebug("INFO: Error - %s", cl_strerror(_result));
 			Q_EMIT errorSignal(_file, cl_strerror(_result));
 	}
-	if(!m_queue_size && !m_dir_thread && !m_mem_thread)
+	if(m_file_threads.isEmpty() && !m_dir_thread && !m_mem_thread)
 		Q_EMIT (_is_proc ? memScanCompletedSignal() : dirScanCompletedSignal());
 }
 
@@ -270,13 +268,13 @@ void ClamavEngine::threadFinishedSlot()
 	if(_thread == m_dir_thread)
 	{
 		m_dir_thread = NULL;
-		if(!m_queue_size)
-		Q_EMIT dirScanCompletedSignal();
+		if(m_file_threads.isEmpty())
+			Q_EMIT dirScanCompletedSignal();
 	}
 	else if(_thread == m_mem_thread)
 	{
 		m_mem_thread = NULL;
-		if(!m_queue_size)
+		if(m_file_threads.isEmpty())
 			Q_EMIT memScanCompletedSignal();
 	}
 	else

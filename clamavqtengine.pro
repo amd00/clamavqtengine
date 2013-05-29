@@ -4,7 +4,7 @@ MOC_DIR = .moc
 
 QT -= gui
 TEMPLATE = lib
-VERSION = 1.2.1
+VERSION = 1.2.2
 TARGET = clamavqtengine
 INCLUDEPATH += .
 LIBS += -lclamav
