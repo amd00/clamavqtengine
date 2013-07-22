@@ -12,14 +12,17 @@ QT4_WRAP_CPP(HEADERS_MOC ${HEADER_LIB})
 INCLUDE(${QT_USE_FILE})
 ADD_DEFINITIONS(${QT_DEFINITIONS})
 
-add_library(clamavqtengineS STATIC ${SOURCE_LIB})
-add_library(clamavqtengine SHARED ${SOURCE_LIB})
+add_library(clamavqtengineS STATIC ${SOURCE_LIB} ${HEADERS_MOC})
+add_library(clamavqtengine SHARED ${SOURCE_LIB} ${HEADERS_MOC})
 
-set_target_properties(clamavqtengine  PROPERTIES
+target_link_libraries(clamavqtengine clamav)
+target_link_libraries(clamavqtengineS clamav)
+
+set_target_properties(clamavqtengine PROPERTIES
 	  VERSION 1.0.0
 	  SOVERSION 1.0
 	)
-	
+
 INSTALL(TARGETS clamavqtengineS clamavqtengine
 	LIBRARY DESTINATION lib
 	ARCHIVE DESTINATION lib
