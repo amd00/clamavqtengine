@@ -26,19 +26,29 @@
 
 void DirScanner::run()
 {
-	Scanner::run();
+	Q_EMIT dirScanStartedSignal();
 	scanDir(m_dir);
 }
 
-void DirScanner::scanDir(const QString &_dir)
+void DirScanner::scanDir(const QString &_dir, bool _top)
 {
 	QDir dir(_dir);
 	if(m_excl_dirs.contains(dir.absolutePath()))
 		return;
 	QStringList dirs = dir.entryList(QDir::Dirs | QDir::NoDotAndDotDot | QDir::Hidden | QDir::NoSymLinks);
 	foreach(QString d, dirs)
-		scanDir(dir.absoluteFilePath(d));
+	{
+		if(Scanner::exit())
+			break;
+		scanDir(dir.absoluteFilePath(d), false);
+	}
 	QStringList files = dir.entryList(QDir::Files | QDir::Hidden | QDir::NoSymLinks);
 	foreach(QString f, files)
+	{
+		if(Scanner::exit())
+			break;
 		Q_EMIT fileFindedSignal(dir.absoluteFilePath(f));
+	}
+	if(_top)
+		Q_EMIT dirScanCompletedSignal();
 }

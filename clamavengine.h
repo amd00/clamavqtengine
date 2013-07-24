@@ -41,9 +41,9 @@ private:
 	cl_engine *m_engine;
 	QStringList m_processes;
 	QThreadPool *m_pool;
-	QList<QThread*> m_file_threads;
-	QThread *m_dir_thread;
-	QThread *m_mem_thread;
+	qint32 m_files_count;
+	bool m_dir_scan;
+	bool m_mem_scan;
 
 public:
 	ClamavEngine(qint32 _thread_count = -1, const QString &_db_path = QString::null);
@@ -70,10 +70,9 @@ private Q_SLOTS:
 	void fileScanCompletedSlot(const QString &_fd, qint32 _result, const QString &_virname, bool _is_proc);
 	void fileFindedSlot(const QString &_file);
 	void procFindedSlot(const QString &_file);
-	void fileThreadStartedSlot(QThread *_thread);
-	void dirThreadStartedSlot(QThread *_thread);
-	void memThreadStartedSlot(QThread *_thread);
-	void threadFinishedSlot();
+	
+	void memScanCompletedSlot();
+	void dirScanCompletedSlot();
 
 Q_SIGNALS:
 	void fileScanStartedSignal(const QString &_file);
@@ -83,6 +82,8 @@ Q_SIGNALS:
 	void fileVirusDetectedSignal(const QString &_file, const QString &_virus);
 	void procVirusDetectedSignal(const QString &_proc, qint32 _pid, const QString &_virus);
 	void errorSignal(const QString &_file, const QString &_err);
+	void memScanStartedSignal();
+	void dirScanStartedSignal();
 	void memScanCompletedSignal();
 	void dirScanCompletedSignal();
 	void scanStoppedSignal();

@@ -32,7 +32,6 @@
 
 void FileScanner::run()
 {
-	Scanner::run();
 	QFile f(m_file);
 	if(!f.open(QIODevice::ReadOnly))
 	{
@@ -48,9 +47,16 @@ void FileScanner::run()
 	}
 	else
 		qDebug("INFO: Scanning file: %s", m_file.toLocal8Bit().data());
+	if(Scanner::exit())
+	{
+		if(m_is_proc)
+			f.remove();
+		return;
+	}
 	const char *virname = NULL;
 	long unsigned int scanned = 0;
 	int result = cl_scandesc(f.handle(), &virname, &scanned, m_engine, CL_SCAN_STDOPT);
 	f.close();
+	f.remove();
 	Q_EMIT fileScanCompletedSignal(m_file, result, virname, m_is_proc);
 }

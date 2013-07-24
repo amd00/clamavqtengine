@@ -28,7 +28,7 @@
 
 void MemScanner::run()
 {
-	Scanner::run();
+	Q_EMIT memScanStartedSignal();
 	scanMemory();
 }
 
@@ -39,6 +39,8 @@ void MemScanner::scanMemory()
 	QRegExp mem_addr_regex("^([0-9a-fA-F]+)-([0-9a-fA-F]+)\\sr");
 	foreach(QString proc, proc_list)
 	{
+		if(exit())
+			break;
 		QString maps_file_str(QDir(proc_dir.absoluteFilePath(proc)).absoluteFilePath("maps"));
 		QString mem_file_str(QDir(proc_dir.absoluteFilePath(proc)).absoluteFilePath("mem"));
 		QFile maps_file(maps_file_str);
@@ -72,4 +74,5 @@ void MemScanner::scanMemory()
 		f.close();
 		Q_EMIT procFindedSignal(f.fileName());
 	}
+	Q_EMIT memScanCompletedSignal();
 }

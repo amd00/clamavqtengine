@@ -31,13 +31,14 @@ class Scanner : public QObject, public QRunnable
 {
 	Q_OBJECT
 	
+private:
+	static bool m_exit;
+	
 public:
 	Scanner() {}
 	virtual ~Scanner() {}
-	virtual void run() { Q_EMIT threadStartedSignal(QThread::currentThread());}
-	
-Q_SIGNALS:
-	void threadStartedSignal(QThread *_thread);
+ 	static void setExit(bool _exit = true) { Scanner::m_exit = _exit; }
+	static bool exit() { return Scanner::m_exit; }
 };
 
 #endif

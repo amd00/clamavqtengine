@@ -41,6 +41,8 @@ private:
 
 Q_SIGNALS:
 	void procFindedSignal(const QString &_file);
+	void memScanStartedSignal();
+	void memScanCompletedSignal();
 };
 
 #endif

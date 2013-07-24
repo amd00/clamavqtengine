@@ -43,10 +43,12 @@ protected:
 	void run();
 
 private:
-	void scanDir(const QString &_dir);
+	void scanDir(const QString &_dir, bool _top = true);
 
 Q_SIGNALS:
 	void fileFindedSignal(const QString &_file);
+	void dirScanStartedSignal();
+	void dirScanCompletedSignal();
 };
 
 #endif
