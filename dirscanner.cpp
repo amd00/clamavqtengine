@@ -21,8 +21,10 @@
  */
 
 #include <QDir>
+#include <QThreadPool>
 
 #include "dirscanner.h"
+#include "filescanner.h"
 
 void DirScanner::run()
 {
@@ -38,6 +40,7 @@ void DirScanner::scanDir(const QString &_dir, bool _top)
 	QStringList dirs = dir.entryList(QDir::Dirs | QDir::NoDotAndDotDot | QDir::Hidden | QDir::NoSymLinks);
 	foreach(QString d, dirs)
 	{
+		checkPause();
 		if(Scanner::exit())
 			break;
 		scanDir(dir.absoluteFilePath(d), false);
@@ -45,9 +48,17 @@ void DirScanner::scanDir(const QString &_dir, bool _top)
 	QStringList files = dir.entryList(QDir::Files | QDir::Hidden | QDir::NoSymLinks);
 	foreach(QString f, files)
 	{
+		checkPause();
 		if(Scanner::exit())
 			break;
+// 		FileScanner *scanner = new FileScanner(engine(), dir.absoluteFilePath(f), false);
+// 		connect(scanner, SIGNAL(fileScanCompletedSignal(const QString&, qint32, const QString&, bool)), 
+// 				this, SIGNAL(fileScanCompletedSignal(const QString&, qint32, const QString&, bool)));
+// 		connect(scanner, SIGNAL(errorSignal(const QString&, const QString&)), this, SIGNAL(errorSignal(const QString&, const QString&)));
+// 		connect(scanner, SIGNAL(fileScanStartedSignal(const QString&)), this, SIGNAL(fileScanStartedSignal(const QString&)));
+// 		pool() -> start(scanner);
 		Q_EMIT fileFindedSignal(dir.absoluteFilePath(f));
+		
 	}
 	if(_top)
 		Q_EMIT dirScanCompletedSignal();

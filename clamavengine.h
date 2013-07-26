@@ -44,6 +44,7 @@ private:
 	qint32 m_files_count;
 	bool m_dir_scan;
 	bool m_mem_scan;
+	qint32 m_count;
 
 public:
 	ClamavEngine(qint32 _thread_count = -1, const QString &_db_path = QString::null);
@@ -66,7 +67,12 @@ private:
 	bool scanDirThread(const QString &_dir, const QStringList &_excl_dirs);
 	bool scanMemoryThread();
 
+public Q_SLOTS:
+	void pauseSlot() { Q_EMIT pauseSignal(); }
+	void resumeSlot() { Q_EMIT resumeSignal(); }
+	
 private Q_SLOTS:
+	void fileScanStartedSlot(const QString &_file) {qDebug("COUNT bef: %i", m_files_count); m_count++; m_files_count++; qDebug("ENG_COUNT: %i", m_count); }
 	void fileScanCompletedSlot(const QString &_fd, qint32 _result, const QString &_virname, bool _is_proc);
 	void fileFindedSlot(const QString &_file);
 	void procFindedSlot(const QString &_file);
@@ -87,6 +93,8 @@ Q_SIGNALS:
 	void memScanCompletedSignal();
 	void dirScanCompletedSignal();
 	void scanStoppedSignal();
+	void pauseSignal();
+	void resumeSignal();
 };
 
 #endif

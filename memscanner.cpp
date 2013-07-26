@@ -23,8 +23,10 @@
 #include <QDir>
 #include <QTextStream>
 #include <QTemporaryFile>
+#include <QThreadPool>
 
 #include "memscanner.h"
+#include "filescanner.h"
 
 void MemScanner::run()
 {
@@ -39,6 +41,7 @@ void MemScanner::scanMemory()
 	QRegExp mem_addr_regex("^([0-9a-fA-F]+)-([0-9a-fA-F]+)\\sr");
 	foreach(QString proc, proc_list)
 	{
+		checkPause();
 		if(exit())
 			break;
 		QString maps_file_str(QDir(proc_dir.absoluteFilePath(proc)).absoluteFilePath("maps"));
@@ -72,6 +75,14 @@ void MemScanner::scanMemory()
 			}
 		}
 		f.close();
+// 		FileScanner *scanner = new FileScanner(engine(), f.fileName(), true);
+// 		
+// 		connect(scanner, SIGNAL(fileScanCompletedSignal(const QString&, qint32, const QString&, bool)), 
+// 				this, SIGNAL(fileScanCompletedSignal(const QString&, qint32, const QString&, bool)));
+// 		connect(scanner, SIGNAL(errorSignal(const QString&, const QString&)), this, SIGNAL(errorSignal(const QString&, const QString&)));
+// 		connect(scanner, SIGNAL(fileScanStartedSignal(const QString&)), this, SIGNAL(fileScanStartedSignal(const QString&)));
+// 		
+// 		pool() -> start(scanner);
 		Q_EMIT procFindedSignal(f.fileName());
 	}
 	Q_EMIT memScanCompletedSignal();

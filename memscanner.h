@@ -30,7 +30,7 @@ class MemScanner : public Scanner
 	Q_OBJECT
 
 public:
-	MemScanner()  : Scanner() {}
+	MemScanner(QThreadPool *_pool, cl_engine *_engine)  : Scanner(_pool, _engine) {}
 	~MemScanner() {}
 
 protected:
@@ -41,6 +41,9 @@ private:
 
 Q_SIGNALS:
 	void procFindedSignal(const QString &_file);
+	void fileScanStartedSignal(const QString &_file);
+	void fileScanCompletedSignal(const QString &_fd, qint32 _result, const QString &_virname, bool _is_proc);
+	void errorSignal(const QString &_file, const QString &_err);
 	void memScanStartedSignal();
 	void memScanCompletedSignal();
 };

@@ -36,7 +36,8 @@ private:
 	QStringList m_excl_dirs;
 
 public:
-	DirScanner(const QString &_dir, const QStringList &_excl_dirs)  : Scanner(), m_dir(_dir), m_excl_dirs(_excl_dirs) {}
+	DirScanner(QThreadPool *_pool, cl_engine *_engine, const QString &_dir, const QStringList &_excl_dirs)  : Scanner(_pool, _engine), 
+			m_dir(_dir), m_excl_dirs(_excl_dirs) {}
 	~DirScanner() {}
 
 protected:
@@ -47,6 +48,9 @@ private:
 
 Q_SIGNALS:
 	void fileFindedSignal(const QString &_file);
+	void fileScanStartedSignal(const QString &_file);
+	void fileScanCompletedSignal(const QString &_fd, qint32 _result, const QString &_virname, bool _is_proc);
+	void errorSignal(const QString &_file, const QString &_err);
 	void dirScanStartedSignal();
 	void dirScanCompletedSignal();
 };
