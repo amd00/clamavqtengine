@@ -20,7 +20,6 @@
  *  along with clamavqtengine.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <QFile>
 #include <QObject>
 #include <QRegExp>
 #include <QFileInfo>
@@ -32,19 +31,16 @@
 
 void FileScanner::run()
 {
+	FileRemover frm(m_is_proc ? m_file : QString::null);
+	
 	checkPause();
 	if(Scanner::exit())
-	{
-		if(m_is_proc)
-			QFile::remove(m_file);
 		return;
-	}
+	
 	QFile f(m_file);
 	if(!f.open(QIODevice::ReadOnly))
 	{
 		qCritical("ERROR: Open file error: %s : %s", m_file.toLocal8Bit().data(), f.errorString().toLocal8Bit().data());
-		if(m_is_proc)
-			QFile::remove(m_file);
 		Q_EMIT errorSignal(m_file, f.errorString());
 		return;
 	}
@@ -58,11 +54,11 @@ void FileScanner::run()
 		qDebug("INFO: Scanning file: %s", m_file.toLocal8Bit().data());
 
 	Q_EMIT fileScanStartedSignal(m_file);
+	
 	const char *virname = NULL;
 	long unsigned int scanned = 0;
-	int result = cl_scandesc(f.handle(), &virname, &scanned, engine(), CL_SCAN_STDOPT);
+	int result = cl_scandesc(f.handle(), &virname, &scanned, m_engine, CL_SCAN_STDOPT);
 	f.close();
-	if(m_is_proc)
-		f.remove();
+
 	Q_EMIT fileScanCompletedSignal(m_file, result, virname, m_is_proc);
 }

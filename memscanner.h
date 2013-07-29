@@ -30,7 +30,7 @@ class MemScanner : public Scanner
 	Q_OBJECT
 
 public:
-	MemScanner(QThreadPool *_pool, cl_engine *_engine)  : Scanner(_pool, _engine) {}
+	MemScanner()  : Scanner() {}
 	~MemScanner() {}
 
 protected:

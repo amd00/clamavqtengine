@@ -23,20 +23,32 @@
 #ifndef _FILESCANNER_H_
 #define _FILESCANNER_H_
 
+#include <QFile>
+
 #include "scanner.h"
 
-struct cl_engine;
+class cl_engine;
 
 class FileScanner : public Scanner
 {
 	Q_OBJECT
 
 private:
+	cl_engine *m_engine;
 	QString m_file;
 	bool m_is_proc;
+	class FileRemover
+	{
+	private:
+		QString m_file;
+
+	public:
+		FileRemover(const QString &_file) : m_file(_file) {}
+		~FileRemover() { if(!m_file.isNull()) QFile::remove(m_file); }
+	};
 	
 public:
-	FileScanner(cl_engine *_engine, const QString &_file, bool _is_proc) : Scanner(NULL, _engine), m_file(_file), m_is_proc(_is_proc) {}
+	FileScanner(cl_engine *_engine, const QString &_file, bool _is_proc) : Scanner(), m_engine(_engine), m_file(_file), m_is_proc(_is_proc) {}
 	~FileScanner() {}
 
 protected:

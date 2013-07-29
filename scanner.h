@@ -27,9 +27,7 @@
 #include <QRunnable>
 #include <QMutex>
 #include <QWaitCondition>
-// #include <QEventLoop>
-
-class QThreadPool;
+#include <QThread>
 
 class Scanner : public QObject, public QRunnable
 {
@@ -37,24 +35,25 @@ class Scanner : public QObject, public QRunnable
 	
 private:
 	static bool m_exit;
-	QThreadPool *m_pool;
-	cl_engine *m_engine;
 	QMutex m_mutex;
 	QWaitCondition m_pause_manager;
 	bool m_is_paused;
-// 	QEventLoop m_loop;
 	
 protected:
-	QThreadPool *pool() const { return m_pool; }
-	cl_engine *engine() const { return m_engine; }
 	void checkPause() { if(m_is_paused) m_pause_manager.wait(&m_mutex); }
+	class Sleeper : public QThread
+	{
+	public:
+		static void usleep(unsigned long usecs) { QThread::usleep(usecs); }
+		static void msleep(unsigned long msecs) { QThread::msleep(msecs); }
+		static void sleep(unsigned long secs) { QThread::sleep(secs); }
+	};
 	
 public:
-	Scanner(QThreadPool *_pool, cl_engine *_engine) : m_pool(_pool), m_engine(_engine), 
-		m_mutex(), m_pause_manager(), m_is_paused(false) {}
+	Scanner() : m_mutex(), m_pause_manager(), m_is_paused(false) {}
 	virtual ~Scanner() {}
  	static void setExit(bool _exit = true) { Scanner::m_exit = _exit; }
-	static bool exit() { return Scanner::m_exit; 
+	static bool exit() { return Scanner::m_exit; }
 
 public Q_SLOTS:
 	void pauseSlot() { m_is_paused = true; }

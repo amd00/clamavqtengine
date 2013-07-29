@@ -42,7 +42,7 @@ void MemScanner::scanMemory()
 	foreach(QString proc, proc_list)
 	{
 		checkPause();
-		if(exit())
+		if(Scanner::exit())
 			break;
 		QString maps_file_str(QDir(proc_dir.absoluteFilePath(proc)).absoluteFilePath("maps"));
 		QString mem_file_str(QDir(proc_dir.absoluteFilePath(proc)).absoluteFilePath("mem"));
@@ -75,14 +75,6 @@ void MemScanner::scanMemory()
 			}
 		}
 		f.close();
-// 		FileScanner *scanner = new FileScanner(engine(), f.fileName(), true);
-// 		
-// 		connect(scanner, SIGNAL(fileScanCompletedSignal(const QString&, qint32, const QString&, bool)), 
-// 				this, SIGNAL(fileScanCompletedSignal(const QString&, qint32, const QString&, bool)));
-// 		connect(scanner, SIGNAL(errorSignal(const QString&, const QString&)), this, SIGNAL(errorSignal(const QString&, const QString&)));
-// 		connect(scanner, SIGNAL(fileScanStartedSignal(const QString&)), this, SIGNAL(fileScanStartedSignal(const QString&)));
-// 		
-// 		pool() -> start(scanner);
 		Q_EMIT procFindedSignal(f.fileName());
 	}
 	Q_EMIT memScanCompletedSignal();
