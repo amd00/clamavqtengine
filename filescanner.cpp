@@ -52,7 +52,6 @@ void FileScanner::run()
 	}
 	else
 		qDebug("INFO: Scanning file: %s", m_file.toLocal8Bit().data());
-
 	Q_EMIT fileScanStartedSignal(m_file);
 	
 	const char *virname = NULL;

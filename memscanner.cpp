@@ -48,6 +48,7 @@ void MemScanner::scanMemory()
 		QString mem_file_str(QDir(proc_dir.absoluteFilePath(proc)).absoluteFilePath("mem"));
 		QFile maps_file(maps_file_str);
 		QFile mem_file(mem_file_str);
+		
 		if(!maps_file.open(QIODevice::ReadOnly))
 		{
 			qCritical("ERROR: Open file error: %s", maps_file.errorString().toLocal8Bit().data());
